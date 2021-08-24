@@ -44,35 +44,34 @@ df = df.drop(['Target'], axis = 1)
 
 key = np.arange(0, df['Current'].size)
 df['key'] = key
-a = (df.loc[df['key'] == 0])
-a = a.drop(['key'], axis =1)
 
-
+df['idx'] = df.index
+df = np.array(df).tolist()
 
 data = []
 buffer = []
 recent_idx = 0
-for idx in range(len(df['Current'])):
+for idx in range(len(df)):
     if idx % 10000 == 0:
         print(idx, " is Done")
     if idx == 0:
-        recent_idx = df.loc[df['key'] == idx].index
-        input = (df.loc[df['key'] == idx].drop(['key'], axis =1))
+        recent_idx = df[idx][-1]
+        input = df[idx][:-2]
         buffer.append(input)
         continue
 
 
-    if recent_idx + 1 != df.loc[df['key'] == idx].index:
+    if recent_idx + 1 != df[idx][-1]:
         buffer = []
     
-    input = (df.loc[df['key'] == idx].drop(['key'], axis =1))
+    input = df[idx][:-2]
     buffer.append(input)
 
-    recent_idx = df.loc[df['key'] == idx].index
+    recent_idx = df[idx][-1]
     if(len(buffer) == SEQUENCE_SIZE):
         data.append(np.reshape(buffer,(-1,)).tolist())
         buffer = buffer[1:]
+######################################################################
 
-
-
+np.save('./result/forged_data', data)
 
