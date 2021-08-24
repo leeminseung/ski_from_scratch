@@ -20,6 +20,8 @@ class SimpleFC(nn.Module):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
     def forward(self, x):
+        if len(x.shape) > 2:
+            state_and_action = x.reshape(x.shape[0], -1)
         output = self.encoder(x)
         return output
 
