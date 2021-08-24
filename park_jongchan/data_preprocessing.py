@@ -6,6 +6,8 @@ csv = pd.read_csv(path, encoding = 'utf-8')
 
 SEQUENCE_SIZE = 20
 
+
+
 df = pd.DataFrame(csv)
 df = df[2:1048559]
 df.columns = ['Time', 'ENV1', 'ENV2', 'ENV3', 'ENV4', 'Target', 'Current', 'AGENT', 'REWARD']
@@ -42,6 +44,18 @@ plt.show()
 ##############################
 df = df.drop(['Target'], axis = 1)
 
+columns = df.columns
+for i in columns:
+    df[i] -= np.mean(df[i])
+    df[i] /= max(abs(df[i].min()), abs(df[i].max()))
+
+df.hist(bins = 50, figsize=(20,15))
+plt.show()
+
+
+
+
+
 key = np.arange(0, df['Current'].size)
 df['key'] = key
 
@@ -50,8 +64,9 @@ df = np.array(df).tolist()
 
 data = []
 buffer = []
+label = []
 recent_idx = 0
-for idx in range(len(df)):
+for idx in range(len(df) - 1):
     if idx % 10000 == 0:
         print(idx, " is Done")
     if idx == 0:
@@ -70,8 +85,11 @@ for idx in range(len(df)):
     recent_idx = df[idx][-1]
     if(len(buffer) == SEQUENCE_SIZE):
         data.append(np.reshape(buffer,(-1,)).tolist())
+        label.append(df[idx + 1][:-2])
         buffer = buffer[1:]
 ######################################################################
+print(np.shape(label), np.shape(data))
 
 np.save('./result/forged_data', data)
+np.save('./result/forged_label', label)
 
