@@ -6,25 +6,23 @@ import tqdm
 import matplotlib.pyplot as plt
 import datetime
 import argparse
-from get_logger import get_logger
-from get_dataloader import get_dataloader
-from preprocess import get_ski_data
+from utils import EarlyStopper
+from utils import get_logger
+from utils import get_dataloader
 from SimpleFC import SimpleFC
+from Simple1DCNN import Simple1DCNN
 
-def train_model(model, start_time, dataset, args, logger, device):
+def train_model(model, start_time, dataset, args, logger, early_stopper, device):
     loss_fn = nn.MSELoss()
     epochs = args.epochs
     train_losses = []
     val_losses = []
-    best_val_loss = 1e8
 
     train_dataloader, val_dataloader, test_dataloader = get_dataloader(dataset, device, args)
 
     for epoch in tqdm.tqdm(range(epochs)):
         loss_sum = 0
         for state_and_action, next_state in train_dataloader:
-            if len(state_and_action.shape) > 2:
-                state_and_action = state_and_action.reshape(state_and_action.shape[0], -1)
             state_and_action = state_and_action.to(device)
             predicted_next_state = model(state_and_action)
             loss = loss_fn(predicted_next_state, next_state.to(device))
@@ -42,8 +40,6 @@ def train_model(model, start_time, dataset, args, logger, device):
         loss_sum = 0
         with torch.no_grad():
             for state_and_action, next_state in val_dataloader:
-                if len(state_and_action.shape) > 2:
-                    state_and_action = state_and_action.reshape(state_and_action.shape[0], -1)
                 state_and_action = state_and_action.to(device)
                 predicted_next_state = model(state_and_action)
                 loss = loss_fn(predicted_next_state, next_state.to(device))
@@ -59,15 +55,22 @@ def train_model(model, start_time, dataset, args, logger, device):
 
         if epoch == 0:
             plt.legend()
+
         plt.savefig(os.path.join('model_loss', start_time, start_time + '.png'))
         np.save(os.path.join('model_loss', start_time, 'train_losses.npy'), np.array(train_losses))
         np.save(os.path.join('model_loss', start_time, 'val_losses.npy'), np.array(val_losses))
 
-        if loss_sum < best_val_loss:
+        early_stopper.check_early_stopping(loss_sum/len(val_dataloader))
+
+        if early_stopper.save_model:
             model.save_model(start_time)
-            best_val_loss = loss_sum
             msg = '\n\n\t Best Model Saved!!! \n'
             logger.info(msg)
+
+        if early_stopper.stop:
+            msg = '\n\n\t Early Stop by Patience Exploded!!! \n'
+            logger.info(msg)
+            break
 
     return model
     
@@ -96,7 +99,7 @@ if __name__ == '__main__':
     os.mkdir(os.path.join("model_loss", start_time))
 
     # Make and initialize model
-    model = SimpleFC(input_size=args.input_size, hidden_size=args.hidden_node, output_size=5, device=device)
+    model = Simple1DCNN(input_size=6, hidden_size=5, output_size=5, sequential_length=9, device=device)
     model.to(device)
 
     # get data
@@ -105,6 +108,9 @@ if __name__ == '__main__':
     # record model structure
     system_logger = get_logger(name='Autoencoder model', file_path=os.path.join('model_loss', start_time, start_time + '_train_log.log'))
 
+    # Early Stopper 
+    early_stopper = EarlyStopper(patience=20)
+
     system_logger.info('===== Arguments information =====')
     system_logger.info(vars(args))
 
@@ -112,4 +118,4 @@ if __name__ == '__main__':
     system_logger.info(model)
 
     system_logger.info('===== Loss History of Transition Model =====')
-    model = train_model(model, start_time, dataset, args, system_logger, device)
+    model = train_model(model, start_time, dataset, args, system_logger, early_stopper, device)
