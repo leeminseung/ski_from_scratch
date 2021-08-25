@@ -43,6 +43,7 @@ df['REWARD'].plot()
 plt.show()
 ##############################
 df = df.drop(['Target'], axis = 1)
+df = df.drop(['REWARD'], axis = 1)
 
 columns = df.columns
 for i in columns:
@@ -84,7 +85,7 @@ for idx in range(len(df) - 1):
 
     recent_idx = df[idx][-1]
     if(len(buffer) == SEQUENCE_SIZE):
-        data.append(np.reshape(buffer,(-1,)).tolist())
+        data.append(buffer)
         label.append(df[idx + 1][:-2])
         buffer = buffer[1:]
 ######################################################################
