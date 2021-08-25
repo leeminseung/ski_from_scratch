@@ -99,17 +99,18 @@ if __name__ == '__main__':
     os.mkdir(os.path.join("model_loss", start_time))
 
     # Make and initialize model
-    model = Simple1DCNN(input_size=6, hidden_size=5, output_size=5, sequential_length=9, device=device)
+    model = Simple1DCNN(input_size=6, hidden_size=20, output_size=5, sequential_length=1, device=device)
+    # model = SimpleFC(input_size=args.input_size, hidden_size=args.hidden_node, output_size=5, device=device)
     model.to(device)
 
     # get data
-    dataset = np.load("/home/ms/ski_from_scratch/minseung/step_size_3, sequential_length_10.npy")
+    dataset = np.load("/home/ms/ski_from_scratch/minseung/step_size_1,sequential_length_2.npy")
 
     # record model structure
     system_logger = get_logger(name='Autoencoder model', file_path=os.path.join('model_loss', start_time, start_time + '_train_log.log'))
 
     # Early Stopper 
-    early_stopper = EarlyStopper(patience=20)
+    early_stopper = EarlyStopper(patience=50)
 
     system_logger.info('===== Arguments information =====')
     system_logger.info(vars(args))

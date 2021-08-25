@@ -51,4 +51,4 @@ def get_ski_data(sequential_size=0, sampling_frequency=1):
     return data
 
 if __name__ == '__main__':
-    get_ski_data(10, sampling_frequency=1)
+    get_ski_data(sequential_size=2, sampling_frequency=1)
