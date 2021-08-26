@@ -14,14 +14,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-SEQUENCE_SIZE = 32
+SEQUENCE_SIZE = 16
 INPUT_SIZE = 6
 OUTPUT_SIZE = 1 
-HIDDEN_SIZE = 256
-EPOCHS = 100
-ENSEMBLE_SIZE = 5
+HIDDEN_SIZE = 2
+EPOCHS = 500
+ENSEMBLE_SIZE = 2
 BATCH_SIZE = 10000
-STOP_PATIENCE = 10
+STOP_PATIENCE = 100
 path = "DataSet_ARO1_LHT_LC010.CSV"
 csv = pd.read_csv(path, encoding = 'utf-8')
 
@@ -57,7 +57,8 @@ q1 = df['Current'].quantile(q = 0.001)
 q3 = df['Current'].quantile(q = 0.99)
 df.drop(df.loc[df['Current'] < q1].index, inplace = True)
 df.drop(df.loc[df['Current'] > q3].index, inplace = True)
-
+df.hist(bins =50, figsize= (15, 7))
+plt.show()
 ##############################
 
 corr_mat = df.corr()
@@ -134,23 +135,23 @@ class TransitionModel(nn.Module):
 
         self.Normed = nn.LayerNorm(OUTPUT_SIZE)
 
-        nn.init.kaiming_uniform_(self.hidden1.weight)
-        nn.init.kaiming_uniform_(self.hidden2.weight)
-        nn.init.kaiming_uniform_(self.hidden3.weight)
-        nn.init.kaiming_uniform_(self.hidden4.weight)
-        nn.init.kaiming_uniform_(self.hidden5.weight)
+        #nn.init.kaiming_uniform_(self.hidden1.weight)
+        #nn.init.kaiming_uniform_(self.hidden2.weight)
+        #nn.init.kaiming_uniform_(self.hidden3.weight)
+        #nn.init.kaiming_uniform_(self.hidden4.weight)
+        #nn.init.kaiming_uniform_(self.hidden5.weight)
 
     def prediction(self, x):
         prediction = self.forward(x)
         return prediction
 
     def forward(self, x):
-        layer1 = self.hidden1(x)
-        layer2 = self.hidden2(layer1)
-        layer3 = self.hidden3(layer2)
-        layer4 = self.hidden4(layer3)
-        layer5 = self.hidden5(layer4)
-        return self.Normed(layer5)
+        layer1 = F.relu(self.hidden1(x))
+        layer2 = F.relu(self.hidden2(layer1))
+        layer3 = F.relu(self.hidden3(layer2))
+        layer4 = F.relu(self.hidden4(layer3))
+        layer5 = (self.hidden5(layer4))
+        return layer5
 #######################################################
 class EnsembleModel(nn.Module):
     def __init__(self):
@@ -247,7 +248,7 @@ def main():
     model = EnsembleModel().to('cuda:0')
     param = list(model.parameters())
 
-    optimizer = optim.Adam(param, lr = 0.0005, weight_decay= 0.0001)
+    optimizer = optim.Adam(param, lr = 0.00005, weight_decay= 0.0001)
     
     train_loss , val_loss,  model_ = train(model, optimizer, 'cuda:0')
 
